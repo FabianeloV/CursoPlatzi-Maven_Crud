@@ -3,16 +3,13 @@ package org.example.fabianelo.repository;
 import org.example.fabianelo.model.Employee;
 import org.example.fabianelo.util.DataBaseConnection;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.example.fabianelo.util.DataBaseConnection.getConnection;
 
 public class EmployeeRepository implements Repository<Employee> {
+
 
     @Override
     public Employee findById(int id) throws SQLException {
@@ -23,7 +20,7 @@ public class EmployeeRepository implements Repository<Employee> {
     public List<Employee> findAll() throws SQLException {
         List<Employee> employees = new ArrayList<>();
 
-        try (Statement myStmt = getConnection().createStatement(); ResultSet myRs = myStmt.executeQuery("SELECT * FROM employees");) {
+        try (Connection connection = DataBaseConnection.getConnection(); Statement myStmt = connection.createStatement(); ResultSet myRs = myStmt.executeQuery("SELECT * FROM employees");) {
             while (myRs.next()) {
                 employees.add(addEmployee(myRs));
             }
@@ -40,21 +37,22 @@ public class EmployeeRepository implements Repository<Employee> {
         String sql;
 
         if (employee.getId() < 1) {
-            sql = "INSERT INTO employees(first_name, pa_surname, ma_surname, email, salary) VALUES(?, ?, ?, ?, ?)";
+            sql = "INSERT INTO employees(first_name, pa_surname, ma_surname, email, salary, curp) VALUES(?, ?, ?, ?, ?, ?)";
         } else {
-            sql = "UPDATE employees set first_name = ?, pa_surname = ?, ma_surname = ?, email = ?, salary = ? WHERE id = ?";
+            sql = "UPDATE employees set first_name = ?, pa_surname = ?, ma_surname = ?, email = ?, salary = ?,  curp = ?, WHERE id = ?";
         }
 
-        try (PreparedStatement myStmt = getConnection().prepareStatement(sql)) {
+        try (Connection connection = DataBaseConnection.getConnection(); PreparedStatement myStmt = connection.prepareStatement(sql)) {
 
             myStmt.setString(1, employee.getFirst_name());
             myStmt.setString(2, employee.getPa_surname());
             myStmt.setString(3, employee.getMa_surname());
             myStmt.setString(4, employee.getEmail());
             myStmt.setFloat(5, employee.getSalary());
+            myStmt.setString(6, employee.getCurp());
 
             if (employee.getId() != 0) {
-                myStmt.setInt(6, employee.getId());
+                myStmt.setInt(7, employee.getId());
             }
 
             int rows = myStmt.executeUpdate();
@@ -75,7 +73,7 @@ public class EmployeeRepository implements Repository<Employee> {
 
     @Override
     public void delete(int id) throws SQLException {
-        try(PreparedStatement myStmt = getConnection().prepareStatement("DELETE FROM employees WHERE id = ?")) {
+        try (Connection connection = DataBaseConnection.getConnection(); PreparedStatement myStmt = connection.prepareStatement("DELETE FROM employees WHERE id = ?")) {
             myStmt.setInt(1, id);
             myStmt.executeUpdate();
         }
@@ -89,6 +87,7 @@ public class EmployeeRepository implements Repository<Employee> {
         employee.setMa_surname(myRes.getString("ma_surname"));
         employee.setEmail(myRes.getString("email"));
         employee.setSalary(myRes.getFloat("salary"));
+        employee.setCurp(myRes.getString("curp"));
 
         return employee;
     }

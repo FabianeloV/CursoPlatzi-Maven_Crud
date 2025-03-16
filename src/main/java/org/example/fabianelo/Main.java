@@ -9,28 +9,38 @@ import org.example.fabianelo.util.DataBaseConnection;
 
 public class Main {
     public static void main(String[] args) throws SQLException {
-        try (
-                //myConn -- Establecer conexión
-                Connection myConn = DataBaseConnection.getConnection();
+        try (Connection conn = DataBaseConnection.getConnection()) {
+            if (conn.getAutoCommit()) {
+                conn.setAutoCommit(false);
+            }
 
-                //Inicializar statement
-                Statement myStmt = myConn.createStatement();
+            try {
+                Repository<Employee> repository = new EmployeeRepository();
+                Employee employee = new Employee();
 
-                //Result statement -- Mostrar datos: Nombre y apellido
-                ResultSet myRs = myStmt.executeQuery("SELECT * FROM employees");
-        ) {
-            System.out.println("Connected to database");
+                System.out.println("NEW employee:");
 
-            Repository<Employee> repo = new EmployeeRepository();
+                //Seteamnos el empleado a añadir
+                employee.setFirst_name("Fabianelo");
+                employee.setPa_surname("Verdesoto");
+                employee.setMa_surname("Romero");
+                employee.setEmail("fabian@email.com");
+                employee.setSalary(12000F);
+                employee.setCurp("AME356273894098727");
 
-            repo.findAll().forEach(System.out::println);
+                //Accedemos al metodo save() del repositorio
+                repository.save(employee);
 
-            /*while (myRs.next()) {
-                System.out.println(myRs.getString("first_name") + " | " + myRs.getString("pa_surname") + " | " + myRs.getString("email"));
-            }*/
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Failed to connect to database");
+                //Realizamos en commit si se realizó la operación correctamente
+                conn.commit();
+
+                repository.findAll().forEach(System.out::println);
+
+            } catch (SQLException e){
+                //En caso de error, regresamos al ultimo estado antes de realizar la operacion
+                conn.rollback();
+                e.printStackTrace();
+            }
         }
     }
 }
